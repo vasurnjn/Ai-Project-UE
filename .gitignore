@@ -1,0 +1,140 @@
+# =====================================
+# Unreal Engine Git Ignore
+# =====================================
+
+# Compiled binaries
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+*.VC.db
+*.VC.opendb
+*.sln.DotSettings.user
+
+# User-specific files
+*.user
+*.suo
+*.userprefs
+*.opensdf
+*.sdf
+*.suo
+*.ncb
+*.log
+*.tlog
+*.ide
+
+# Mac specific
+.DS_Store
+
+# Windows specific
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Build products
+*.exe
+*.dll
+*.lib
+*.app
+*.ipa
+*.dSYM
+*.pdb
+*.target
+*.exp
+
+# Unreal automatic files
+*.generated.*
+*.Build.cs.meta
+*.Target.cs.meta
+*.uprojectdirs
+*_Stub.*
+*_Stub.cpp
+*_Stub.h
+
+# Auto-generated files from UnrealHeaderTool
+*.generated.h
+*.generated.cpp
+
+# Unreal local config (keep Default*.ini, ignore local/user)
+Config/DefaultEditorSettings.ini
+Config/DefaultEditor.ini
+Config/DefaultEngine.ini
+Config/DefaultGame.ini
+Config/DefaultInput.ini
+Config/DefaultDeviceProfiles.ini
+Config/DefaultGameUserSettings.ini
+Config/DefaultScalability.ini
+
+# But keep source configs
+!Config/
+!Config/Default*.ini
+
+# Project files
+.vscode/
+.idea/
+.vs/
+*.xcodeproj
+*.xcworkspace
+*.code-workspace
+
+# Local/temporary folders
+__pycache__/
+*.pyc
+*.pyo
+*.bak
+*.tmp
+
+# Backup and autosave files
+*_Backup*/
+*_BackUp/
+*.bak
+*.tmp
+*.old
+*.orig
+*.swp
+*.swo
+
+# Platform-specific intermediate folders
+Android/
+iOS/
+LinuxNoEditor/
+WindowsNoEditor/
+MacNoEditor/
+
+# If you have a source build of Unreal in same repo
+Engine/Binaries/
+Engine/DerivedDataCache/
+Engine/Intermediate/
+Engine/Saved/
+Engine/Build/Android/Java/libs/
+Engine/Build/Android/Java/obj/
+Engine/Build/IOS/Build/
+Engine/Build/IOS/Intermediate/
+
+# Plugins binaries and intermediates
+Plugins/*/Binaries/
+Plugins/*/Intermediate/
+Plugins/*/Saved/
+
+# ShaderCompileWorker and Derived Data
+Engine/Saved/ShaderDebugInfo/
+Engine/Saved/Logs/
+Engine/DerivedDataCache/
+
+# Packaged builds
+*_Packaged/
+*_Shipping/
+*_Development/
+*_Debug/
+*.pak
+*.sig
+
+# =====================================================
+# Keep essential project files (source, content, config)
+# =====================================================
+!Source/
+!Content/
+!Config/
+!*.uproject
+!*.uplugin
