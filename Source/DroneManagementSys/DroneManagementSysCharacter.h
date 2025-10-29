@@ -1,96 +1,83 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright Epic Games, Inc.
 
 #pragma once
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Logging/LogMacros.h"
+#include "InputActionValue.h"
 #include "DroneManagementSysCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
+class UInputMappingContext;
 class UInputAction;
-struct FInputActionValue;
-
-DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
 
 /**
- *  A simple player-controllable third person character
- *  Implements a controllable orbiting camera
+ * Drone-like flying character where:
+ * - W/S: forward/back (in facing direction)
+ * - A/D: strafe
+ * - Q/E: smoothly rotate actor yaw
+ * - Mouse: look/pitch camera only
+ * - No auto facing to movement
  */
-UCLASS(abstract)
-class ADroneManagementSysCharacter : public ACharacter
+UCLASS()
+class  ADroneManagementSysCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
-	/** Camera boom positioning the camera behind the character */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	USpringArmComponent* CameraBoom;
-
-	/** Follow camera */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
-	UCameraComponent* FollowCamera;
-	
-protected:
-
-	/** Jump Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
-	UInputAction* JumpAction;
-
-	/** Move Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
-	UInputAction* MoveAction;
-
-	/** Look Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
-	UInputAction* LookAction;
-
-	/** Mouse Look Input Action */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Input")
-	UInputAction* MouseLookAction;
-
 public:
-
-	/** Constructor */
-	ADroneManagementSysCharacter();	
+	ADroneManagementSysCharacter();
 
 protected:
-
-	/** Initialize input action bindings */
+	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-protected:
-
-	/** Called for movement input */
+	// Input handlers
 	void Move(const FInputActionValue& Value);
-
-	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+	void TurnYaw(const FInputActionValue& Value);
+	void Ascend(const FInputActionValue& Value);
+	void Descend(const FInputActionValue& Value);
+
+protected:
+	// Components
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USpringArmComponent> CameraBoom;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> FollowCamera;
 
 public:
+	// === Controls ===
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Controls")
+	float TurnInputYawSpeedDegPerSec = 240.f;
 
-	/** Handles move inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoMove(float Right, float Forward);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Controls")
+	float MouseYawSpeedDegPerSec = 360.f;
 
-	/** Handles look inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoLook(float Yaw, float Pitch);
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Controls")
+	float LookRatePitch = 1.f;
 
-	/** Handles jump pressed inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpStart();
+	// === Input Assets ===
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
-	/** Handles jump pressed inputs from either controls or UI interfaces */
-	UFUNCTION(BlueprintCallable, Category="Input")
-	virtual void DoJumpEnd();
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> MoveAction;
 
-public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> LookAction;
 
-	/** Returns CameraBoom subobject **/
-	FORCEINLINE class USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> TurnAction;
 
-	/** Returns FollowCamera subobject **/
-	FORCEINLINE class UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> AscendAction;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input")
+	TObjectPtr<UInputAction> DescendAction;
+
+
+	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
+	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 };
-

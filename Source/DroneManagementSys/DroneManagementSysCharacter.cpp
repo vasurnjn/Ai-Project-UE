@@ -1,134 +1,152 @@
-// Copyright Epic Games, Inc. All Rights Reserved.
+// Copyright Epic Games, Inc.
 
 #include "DroneManagementSysCharacter.h"
-#include "Engine/LocalPlayer.h"
+
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/LocalPlayer.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/SpringArmComponent.h"
+
+// Enhanced Input
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputAction.h"
+#include "InputMappingContext.h"
 #include "InputActionValue.h"
-
-DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ADroneManagementSysCharacter::ADroneManagementSysCharacter()
 {
-	// Set size for collision capsule
-	GetCapsuleComponent()->InitCapsuleSize(42.f, 96.0f);
-		
-	// Don't rotate when the controller rotates. Let that just affect the camera.
-	bUseControllerRotationPitch = false;
+	
+
+	// === Flying setup ===
+	UCharacterMovementComponent* Move = GetCharacterMovement();
+	Move->SetMovementMode(MOVE_Walking);
+	Move->GravityScale = 1.0f;
+	Move->MaxFlySpeed = 1200.f;
+	Move->BrakingDecelerationFlying = 6000.f;
+	Move->BrakingFriction = 0.2f;
+	Move->bUseSeparateBrakingFriction = true;
+
+	// No automatic facing
+	Move->bOrientRotationToMovement = false;
+	Move->bUseControllerDesiredRotation = false;
+
+	// Actor rotation will drive direction manually
 	bUseControllerRotationYaw = false;
+	bUseControllerRotationPitch = false;
 	bUseControllerRotationRoll = false;
 
-	// Configure character movement
-	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->RotationRate = FRotator(0.0f, 500.0f, 0.0f);
-
-	// Note: For faster iteration times these variables, and many more, can be tweaked in the Character Blueprint
-	// instead of recompiling to adjust them
-	GetCharacterMovement()->JumpZVelocity = 500.f;
-	GetCharacterMovement()->AirControl = 0.35f;
-	GetCharacterMovement()->MaxWalkSpeed = 500.f;
-	GetCharacterMovement()->MinAnalogWalkSpeed = 20.f;
-	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
-	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
-
-	// Create a camera boom (pulls in towards the player if there is a collision)
+	// === Camera rig ===
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
-	CameraBoom->TargetArmLength = 400.0f;
-	CameraBoom->bUsePawnControlRotation = true;
+	CameraBoom->TargetArmLength = 400.f;
+	CameraBoom->bUsePawnControlRotation = true; // camera follows rotation
 
-	// Create a follow camera
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+}
 
-	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
-	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
+void ADroneManagementSysCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->SetMovementMode(MOVE_Flying);
+	}
+
+	// Add input mapping context
+	if (APlayerController* PC = Cast<APlayerController>(Controller))
+	{
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
+		{
+			if (UEnhancedInputLocalPlayerSubsystem* Subsys = LP->GetSubsystem<UEnhancedInputLocalPlayerSubsystem>())
+			{
+				if (DefaultMappingContext)
+				{
+					Subsys->AddMappingContext(DefaultMappingContext, 0);
+				}
+			}
+		}
+	}
 }
 
 void ADroneManagementSysCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
-	// Set up action bindings
-	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent)) {
-		
-		// Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-		// Moving
-		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADroneManagementSysCharacter::Move);
-		EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ADroneManagementSysCharacter::Look);
-
-		// Looking
-		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADroneManagementSysCharacter::Look);
+	if (UEnhancedInputComponent* EIC = Cast<UEnhancedInputComponent>(PlayerInputComponent))
+	{
+		if (MoveAction)   EIC->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADroneManagementSysCharacter::Move);
+		if (LookAction)   EIC->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADroneManagementSysCharacter::Look);
+		if (TurnAction)   EIC->BindAction(TurnAction, ETriggerEvent::Ongoing, this, &ADroneManagementSysCharacter::TurnYaw);
+		if (AscendAction) EIC->BindAction(AscendAction, ETriggerEvent::Ongoing, this, &ADroneManagementSysCharacter::Ascend);
+		if (DescendAction)EIC->BindAction(DescendAction, ETriggerEvent::Ongoing, this, &ADroneManagementSysCharacter::Descend);
 	}
 	else
 	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		UE_LOG(LogTemp, Error, TEXT("'%s' missing EnhancedInputComponent."), *GetNameSafe(this));
 	}
 }
 
+/* ================= Input Handlers ================= */
+
 void ADroneManagementSysCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
+	const FVector2D Axes = Value.Get<FVector2D>();
 
-	// route the input
-	DoMove(MovementVector.X, MovementVector.Y);
+	if (Axes.Y != 0.f)
+		AddMovementInput(GetActorForwardVector(), Axes.Y);
+
+	if (Axes.X != 0.f)
+		AddMovementInput(GetActorRightVector(), Axes.X);
 }
 
 void ADroneManagementSysCharacter::Look(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D LookAxisVector = Value.Get<FVector2D>();
+ const FVector2D Axes = Value.Get<FVector2D>(); // X=Yaw, Y=Pitch
 
-	// route the input
-	DoLook(LookAxisVector.X, LookAxisVector.Y);
+    if (Axes.X != 0.f)
+    {
+        // Yaw the CAMERA (controller), not the actor
+        AddControllerYawInput(Axes.X * MouseYawSpeedDegPerSec * GetWorld()->GetDeltaSeconds());
+    }
+
+    if (Axes.Y != 0.f)
+    {
+        // Pitch the CAMERA (controller)
+        AddControllerPitchInput(Axes.Y * LookRatePitch * GetWorld()->GetDeltaSeconds());
+    }
 }
 
-void ADroneManagementSysCharacter::DoMove(float Right, float Forward)
+void ADroneManagementSysCharacter::TurnYaw(const FInputActionValue& Value)
 {
-	if (GetController() != nullptr)
+	const float Axis = Value.Get<float>();   // +1 (E) / -1 (Q) or similar
+	if (Axis == 0.f) return;
+
+	const float DeltaYaw = Axis * TurnInputYawSpeedDegPerSec * GetWorld()->GetDeltaSeconds();
+	AddActorWorldRotation(FRotator(0.f, DeltaYaw, 0.f));
+
+	// Keep camera aligned to the actor yaw (so camera doesn't lag behind)
+	if (AController* C = Controller)
 	{
-		// find out which way is forward
-		const FRotator Rotation = GetController()->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		// add movement 
-		AddMovementInput(ForwardDirection, Forward);
-		AddMovementInput(RightDirection, Right);
+		C->SetControlRotation(GetActorRotation());
 	}
 }
 
-void ADroneManagementSysCharacter::DoLook(float Yaw, float Pitch)
+void ADroneManagementSysCharacter::Ascend(const FInputActionValue& Value)
 {
-	if (GetController() != nullptr)
-	{
-		// add yaw and pitch input to controller
-		AddControllerYawInput(Yaw);
-		AddControllerPitchInput(Pitch);
-	}
+	const float Thrust = Value.Get<float>(); // e.g., 1 while held
+    if (Thrust != 0.f)
+        AddMovementInput(GetActorUpVector(), Thrust);
 }
 
-void ADroneManagementSysCharacter::DoJumpStart()
+void ADroneManagementSysCharacter::Descend(const FInputActionValue& Value)
 {
-	// signal the character to jump
-	Jump();
-}
-
-void ADroneManagementSysCharacter::DoJumpEnd()
-{
-	// signal the character to stop jumping
-	StopJumping();
+	const float Thrust = Value.Get<float>();
+	if (Thrust != 0.f)
+		AddMovementInput(-GetActorUpVector(), Thrust);
 }
