@@ -27,12 +27,15 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	UPROPERTY(EditAnywhere)
-	int Storage = 2;
+	int Storage = 4;
 
 	UPROPERTY(VisibleAnywhere)
 	int64 RowId = -1;
 
 	int32 TreesExtinguished = 0;
+
+	UFUNCTION(BlueprintCallable)
+	void DisplayDB();
 
 	
 	

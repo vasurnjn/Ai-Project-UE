@@ -9,6 +9,7 @@
 #include "GetAirLocation.h"
 #include "Tree.h"
 #include "DroneAi.h"
+#include "DatabaseSubsystem.h"
 
 UFlyToPoint::UFlyToPoint()
 {
@@ -102,10 +103,15 @@ void UFlyToPoint::TickTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory,
                 ATree* Tree = Cast<ATree>(HitActor);
                 if (Tree)
                 {
+                    int64 RowId = Drone->RowId;
+                    int32 score = Drone->TreesExtinguished;
+                    auto* DB = Drone->GetGameInstance()->GetSubsystem<UDatabaseSubsystem>();
+                    score++;
+                    DB->UpdateUserScore(RowId, score);
+
                     Tree->bIsOnFire = false;
                     Tree->bHasDroneAssigned = false;
                     Tree->ReleaseClaim();
-                    // Store the tree in the Blackboard
                     //OwnerComp.GetBlackboardComponent()->SetValueAsObject("TreeActor", Tree);
                 }
             }

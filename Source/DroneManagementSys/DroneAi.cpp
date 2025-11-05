@@ -59,3 +59,16 @@ void ADroneAi::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 
 }
 
+void ADroneAi::DisplayDB()
+{
+    auto* DB = GetGameInstance()->GetSubsystem<UDatabaseSubsystem>();
+
+    const auto Rows = DB->GetAllUsers();
+    for (const auto& Row : Rows)
+    {
+        const auto [Id, Name, Score] = Row;
+        UE_LOG(LogTemp, Log, TEXT("User %lld: %s (score %d)"), Id, *Name, Score);
+    }
+
+}
+

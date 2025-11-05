@@ -30,7 +30,7 @@ public:
 	int SpreadRadius = 500;
 
 	UPROPERTY(EditAnywhere)
-	int SpreadSpeed = 4;
+	int SpreadSpeed = 2;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	UNiagaraComponent* NiagaraComp;
