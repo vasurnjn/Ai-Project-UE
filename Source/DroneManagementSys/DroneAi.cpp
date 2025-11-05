@@ -3,6 +3,7 @@
 
 #include "DroneAi.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "DatabaseSubsystem.h"
 
 // Sets default values
 ADroneAi::ADroneAi()
@@ -18,6 +19,8 @@ ADroneAi::ADroneAi()
     Move->BrakingDecelerationFlying = 2048.f;
     Move->bOrientRotationToMovement = true;
     Move->RotationRate = FRotator(0.f, 360.f, 0.f);
+
+
 }
 
 // Called when the game starts or when spawned
@@ -25,6 +28,20 @@ void ADroneAi::BeginPlay()
 {
 	Super::BeginPlay();
     GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+
+    if (RowId == -1) {
+        auto* DB = GetGameInstance()->GetSubsystem<UDatabaseSubsystem>();
+        if (DB) {
+
+            const FString ActorName = GetName();
+            int32 Score = 0;
+
+            DB->InsertUser(ActorName, Score, RowId);
+
+            UE_LOG(LogTemp, Log, TEXT("Inserted actor %s into DB at row %lld"), *ActorName, RowId);
+
+        }
+    }
 	
 }
 

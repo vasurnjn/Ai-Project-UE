@@ -26,6 +26,14 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(EditAnywhere)
+	int Storage = 2;
+
+	UPROPERTY(VisibleAnywhere)
+	int64 RowId = -1;
+
+	int32 TreesExtinguished = 0;
+
 	
 	
 };

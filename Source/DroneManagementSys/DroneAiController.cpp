@@ -11,12 +11,12 @@ void ADroneAiController::OnPossess(APawn* InPawn)
 {
     Super::OnPossess(InPawn);
 
-    if (BehaviorTree && BehaviorTree->BlackboardAsset)
+    UE_LOG(LogTemp, Warning, TEXT("Hello from C++!")); 
+    if (BehaviorTree)
     {
         
-        if (UseBlackboard(BehaviorTree->BlackboardAsset, BlackBoardComp))
-        {
+        
             RunBehaviorTree(BehaviorTree);
-        }
+        
     }
 }
