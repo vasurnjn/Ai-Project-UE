@@ -1,147 +1,137 @@
-AI Drone Management System (Unreal Engine 5, C++, AWS Deployment)
-Overview
+🚁 AI Drone Management System
+Unreal Engine 5 • C++ • Behavior Trees • AWS Cloud Deployment
 
-This project is an autonomous drone management simulation built using Unreal Engine 5 and C++. Multiple AI-controlled drones detect burning trees, extinguish fires, return to a manager station to refill resources, and continuously operate without manual input. The simulation includes a fire-spread system, a local SQLite database, network communication features, and full cloud deployment on AWS using EC2 and S3.
+The AI Drone Management System is a fully autonomous simulation built in Unreal Engine 5 using C++, Behavior Trees, and Blackboard AI.
+Drones detect burning trees, extinguish fires, manage their own resources, refill at a base station, and log all activity locally.
+The project also integrates AWS EC2 and AWS S3 to run the entire simulation remotely in the cloud.
 
-The purpose of the project is to demonstrate autonomous agent behavior, game AI architecture, cloud-based simulation execution, and data logging techniques in a real-time environment.
+🔥 Key Features
 
-Core Features
+🤖 Autonomous Drone AI using Behavior Trees (BT_Drone)
 
-Autonomous drones controlled using C++ and Unreal’s Behavior Tree system.
+🌲 Dynamic Fire Simulation using Niagara VFX
 
-Fire simulation system with trees that ignite and spread fire.
+🚉 Manager Station for drone refilling and resource handling
 
-Manager actor that refills drones when their water storage is empty.
+🗄️ SQLite Database Subsystem for storing drone telemetry
 
-SQLite database system that stores drone information and telemetry.
+🌐 Network Manager capable of DNS, HTTP GET, and FTP operations
 
-Network Manager capable of DNS resolution, HTTP GET requests, and FTP uploads.
+☁️ AWS Integration: EC2 headless server + S3 build storage
 
-Cloud deployment using AWS EC2 for running the packaged build in headless mode.
+⚙️ Fully Modular C++ System (extensible & optimized)
 
-Build storage and retrieval using AWS S3.
+🛰️ Designed for scalable simulations and experimentation
 
-Support for scalable autonomous simulations with minimal manual intervention.
+🏗️ System Architecture (Summary)
+1. Drone AI (C++ + Blueprint)
 
-Architecture Summary
-1. Drone AI (C++ Class + Blueprint)
+Handles:
 
-Represents the main drone actor.
+Movement & thrust
 
-Handles flying, movement, extinguishing fire, and tracking water storage.
+Extinguishing actions
 
-Registers itself in the SQLite database upon spawning.
+Resource management (water storage)
 
-Communicates with the Behavior Tree through the AI controller.
+Database registration on spawn
 
 2. Drone AI Controller
 
-Runs the Behavior Tree (BT_Drone) and manages Blackboard data.
+Runs the Behavior Tree
 
-Acts as the decision-making unit for the drone.
+Updates Blackboard keys
 
-Switches between finding fire, extinguishing, or refilling.
+Converts decisions into actions
 
 3. Behavior Tree (BT_Drone)
 
-The Behavior Tree controls drone logic:
+Main logic:
 
-Check if the drone has storage.
+Check storage
 
-If storage is available, locate the nearest burning tree.
+Locate nearest burning tree
 
-Fly to the location and extinguish the fire.
+Fly and extinguish fire
 
-If storage is empty, return to the Manager to refill.
+If empty, return to Manager
 
-Repeat this loop continuously.
+Repeat autonomously
 
 4. Blackboard (BB_Drone)
 
-Stores AI data such as:
+Stores:
 
-Destination
+Destination vector
 
-Self Actor reference
+Self reference
 
-Current state
+Drone state
 
-Flags for behavior switching
+Boolean flags for behavior switching
 
-5. BT Tasks and Services
+5. Tree Actor
 
-GetAirLocation: Finds the nearest burning tree or manager.
+Can catch fire
 
-FlyToPoint: Moves the drone to the destination, extinguishes fire, or refills storage.
+Spreads fire to nearby trees
 
-CheckStorage: Determines if the drone should extinguish fires or go refill.
+Allows only one drone to extinguish at a time
 
-Additional utility tasks/services used for environment checks and updates.
+6. Manager (Refill Station)
 
-6. Tree Actor
+Refills drone storage
 
-Represents a tree object that can catch fire.
+Acts as fallback destination
 
-Uses Niagara particle systems for fire effects.
+7. DatabaseSubsystem (SQLite)
 
-Contains logic to spread fire to nearby trees.
+Database stored at: Saved/Databases/game.db
 
-Supports claiming and releasing locks so multiple drones do not extinguish the same tree.
+Inserts drone logs
 
-7. Manager (Refill Station)
+Updates telemetry
 
-Static actor that refills drones when their storage is empty.
+Handles SQL queries internally
 
-Used as the fallback destination when drones cannot extinguish more trees.
+8. NetworkManager
 
-8. Database Subsystem (SQLite)
+Supports:
 
-Stores drone data in Saved/Databases/game.db.
+DNS Lookup
 
-Creates tables, inserts drone spawn logs, updates telemetry, and retrieves stored data.
+HTTP GET
 
-Provides structured local logging for simulation runs.
+FTP file upload
+Use cases: Cloud telemetry, remote monitoring
 
-9. Network Manager
+9. GameMode / Character / PlayerController
 
-Demonstrates external connectivity.
+Simulation initialization
 
-Can perform:
+Basic player movement to observe drones
 
-DNS resolution
+Input handling
 
-HTTP GET requests
+☁️ AWS Cloud Deployment
 
-FTP uploads using curl
+The complete simulation runs remotely using AWS.
 
-Useful for extending the system to cloud telemetry or remote monitoring.
+Amazon S3
 
-10. GameMode, Character, PlayerController
+Stores packaged Unreal build (DroneManagementSys_Win64.zip).
 
-GameMode initializes the simulation.
-
-Character class allows a player to spectate the environment.
-
-PlayerController handles input bindings.
-
-AWS Cloud Deployment
-S3
-
-A bucket (example: ai-ue-project-storage) is used to store the packaged Unreal Engine build.
-
-Build is uploaded using AWS CLI.
-
-Example:
+Upload example:
 
 aws s3 cp "DroneManagementSys_Win64.zip" s3://ai-ue-project-storage/builds/
 
-EC2
+Amazon EC2
 
-The packaged build is executed on an EC2 instance in headless mode.
+Runs the simulation headlessly through Wine + Xvfb.
 
 Steps:
 
-Connect using SSH:
+Connect to EC2:
 
 ssh -i "key.pem" ubuntu@<public-ip>
 
@@ -152,64 +142,69 @@ sudo apt update
 sudo apt install unzip wine winetricks awscli xvfb -y
 
 
-Download the build:
+Download build:
 
 aws s3 cp s3://ai-ue-project-storage/builds/DroneManagementSys_Win64.zip .
 unzip DroneManagementSys_Win64.zip -d DroneManagementSys
 cd DroneManagementSys
 
 
-Run the simulation headlessly:
+Run headless:
 
 nohup xvfb-run -a wine DroneManagementSys.exe -server -nullrhi -log > server.log 2>&1 &
 
 
-Check logs:
+View logs:
 
 tail -n 50 server.log
 
+📊 Performance Summary
 
-This setup allows the simulation to run continuously in the cloud without requiring a local machine.
+Local FPS: 50–60
 
-Performance Summary
+EC2 headless FPS: 45–50
 
-Average FPS locally: 50–60 depending on the number of drones.
+Pathfinding success rate: ~95%
 
-EC2 headless execution FPS: ~45–50 depending on instance type.
+AI decision latency: ~0.1s
 
-Pathfinding success rate: ~95% in the test environment.
+Stable up to ~8 drones before linear FPS drop
 
-AI decision latency: ~0.1 seconds.
+🧩 Local Setup
+Requirements:
 
-Performance drops linearly after ~8 drones due to increased movement and BT updates.
+Unreal Engine 5
 
-Installation & Running Locally
+Visual Studio 2022
 
-Clone the repository into an Unreal Engine 5 project.
+Windows 64-bit
 
-Open the project in Unreal Editor.
+Steps:
 
-Build using Visual Studio (for C++).
+Clone the repository
 
-Press Play to run the simulation inside the editor.
+Open the project in Unreal Engine
 
-How to Package the Project
+Build using Visual Studio
 
-In Unreal Engine:
-File → Package Project → Windows (64-bit)
+Click Play to start simulation
 
-Wait for the build to be generated.
+📦 Packaging Instructions
 
-Upload the .zip file to AWS S3 (if needed for cloud deployment).
+Unreal Engine → File → Package Project → Windows (64-bit)
 
-Future Improvements
+Generate .zip
 
-Multi-drone coordination using swarm algorithms.
+Upload to AWS S3 if deploying to cloud
 
-Cloud telemetry logging using DynamoDB or S3.
+🚀 Future Improvements
 
-Web dashboard for real-time monitoring.
+Multi-drone coordination (swarm AI)
 
-Integration with a vision system for actual object detection.
+AWS DynamoDB or S3 telemetry logging
 
-Multi-instance deployment using AWS Auto Scaling.
+Real-time monitoring dashboard
+
+Multi-instance cloud scaling
+
+Machine vision integration for tree detection
